@@ -1,0 +1,66 @@
+version: '3.9'
+
+services:
+
+  nginx:
+    build:
+      context: ./containers/nginx/
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./containers/nginx/templates:/etc/nginx/templates
+    restart: always
+    networks:
+      psyapp:
+        ipv4_address: 10.1.0.10
+
+  postgres:
+    image: postgres:latest
+    volumes:
+      - pg_psyapp:/var/lib/postgresql/data
+      - ./containers/postgres/init:/docker-entrypoint-initdb.d
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    networks:
+      psyapp:
+
+  redis:
+    image: redis:5.0
+    networks:
+      psyapp:
+
+  react:
+    image: node:19.6
+    command: npm run start
+    working_dir: /var/www/html/
+    volumes:
+      - ../webapp-psy-react:/var/www/html/
+    networks:
+      psyapp:
+        ipv4_address: 10.1.0.20
+
+  node:
+    image: node:19.6
+    command: npm run start
+    working_dir: /var/www/html/
+    volumes:
+      - ../webapp-psy-node:/var/www/html/
+    networks:
+      psyapp:
+        ipv4_address: 10.1.0.30
+
+volumes:
+  pg_psyapp:
+
+networks:
+  psyapp:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.1.0.0/24
+          gateway: 10.1.0.1
